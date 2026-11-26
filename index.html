@@ -265,7 +265,9 @@ a.tag:hover { color: var(--fg); border-color: var(--slot-hi); }
 .rfacts div { display: inline-flex; gap: 6px; align-items: baseline; padding: 4px 8px; background: var(--panel-2); border: 1px solid var(--line); font-size: 13px; }
 .rfacts dt { color: var(--muted); }
 .rfacts dd { margin: 0; }
-.rrel { margin: 0; font-size: 13px; color: #e59a7a; }
+.rrel { margin: 0; font-size: 13px; color: var(--muted); }
+.rrel.warn { color: #e59a7a; }
+.shared { margin: 0; max-width: 900px; color: var(--muted); font-size: 14px; }
 .plain-steps { list-style: none; counter-reset: ps; margin: 0; padding: 0; display: grid; gap: 8px; max-width: 820px; }
 .plain-steps li { counter-increment: ps; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 10px 12px; background: var(--panel); border: 2px solid var(--line); }
 .plain-steps li::before { content: counter(ps); display: grid; place-items: center; height: 30px; font: 15px/1 var(--font-display); background: var(--panel-2); border: 2px solid var(--line); }
@@ -320,8 +322,8 @@ dialog.modal .mhead { display: flex; justify-content: space-between; align-items
 </div>
 <dialog class="modal" id="modal"></dialog>
 
-<script>window.HANDBOOK_BUILD = "b2b77f8395";</script>
-<script src="viewer.js?v=b2b77f8395"></script>
+<script>window.HANDBOOK_BUILD = "8427698be3";</script>
+<script src="viewer.js?v=8427698be3"></script>
 <script>
 "use strict";
 const view = document.getElementById("view");
@@ -528,17 +530,22 @@ function renderCatalog(block, section) {
   const pictures = block.view === "scenes";
   const rows = block.view === "list";
   // List view: everything about an item is on the page, one item per row.
+  // A paragraph every item repeats is shown once above the list.
+  const counts = new Map();
+  if (rows) for (const it of block.items) for (const p of new Set(it.detail?.text || [])) counts.set(p, (counts.get(p) || 0) + 1);
+  const shared = [...counts].filter(([, n]) => n > 2 && n >= block.items.length / 2).map(([p]) => p);
   const row = (item) => {
     const d = item.detail || {};
+    const known = new Set([...(item.stats || []).map(([, v]) => v), ...(item.subtitle || "").split(" · ")]);
     const meta = [item.subtitle, ...(item.stats || []).map(([k, v]) => `${k.toLowerCase()} ${v}`)].filter(Boolean).join(" · ");
     const related = (d.related || []).map((r) => r.text).join(", ");
     return el("article", { class: "row-item" }, slot(item.icon, 44),
       el("div", {},
         el("h3", {}, item.title),
         meta ? el("div", { class: "meta" }, meta) : null,
-        d.text?.length ? el("div", { class: "rtext" }, d.text.map((p) => el("p", {}, p))) : null,
-        d.facts?.length ? el("dl", { class: "rfacts" }, d.facts.filter(([, v]) => v !== item.subtitle).map(([k, v]) => el("div", {}, el("dt", {}, k), el("dd", {}, v)))) : null,
-        related ? el("p", { class: "rrel" }, "Не сочетается: " + related) : null));
+        d.text?.some((p) => !shared.includes(p)) ? el("div", { class: "rtext" }, d.text.filter((p) => !shared.includes(p)).map((p) => el("p", {}, p))) : null,
+        d.facts?.length ? el("dl", { class: "rfacts" }, d.facts.filter(([, v]) => v !== item.subtitle && !known.has(v)).map(([k, v]) => el("div", {}, el("dt", {}, k), el("dd", {}, v)))) : null,
+        related ? el("p", { class: block.related ? "rrel warn" : "rrel" }, (block.related || "Связано") + ": " + related) : null));
   };
   const tiles = block.items.map((item) => {
     if (rows) { const r = row(item); r._item = item; r._hay = lower([item.title, item.subtitle, ...Object.values(item.tags || {}), ...(item.detail?.text || [])].join(" ")); return r; }
@@ -591,7 +598,7 @@ function renderCatalog(block, section) {
     return el("label", { class: "pick" }, el("span", {}, f.label), select);
   });
   const bar = controls.length ? el("div", { class: "picks" }, controls, reset, shown) : el("div", { class: "picks" }, shown);
-  const box = el("div", { class: "filters" }, bar, el("div", { class: pictures ? "grid" : rows ? "rows" : "items" }, tiles));
+  const box = el("div", { class: "filters" }, bar, shared.length ? el("p", { class: "shared" }, shared.join(" ")) : null, el("div", { class: pictures ? "grid" : rows ? "rows" : "items" }, tiles));
   box._filter = (q) => { query = q; return apply(); };
   apply();
   return box;
@@ -861,7 +868,7 @@ function prepare(data) {
   }
 }
 
-fetch("data.json?v=b2b77f8395", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
+fetch("data.json?v=8427698be3", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
   prepare(data);
   nav.replaceChildren(...sections.map((s) => el("li", {}, el("a", { href: "#" + s.id }, slot(s.icon, 26), s.title))));
   buildIndex();

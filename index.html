@@ -71,12 +71,18 @@ h2 { font-size: 24px; line-height: 1.15; }
 h3 { font-size: 19px; line-height: 1.2; }
 .eyebrow { font: 13px/1 var(--font-display); color: var(--accent); letter-spacing: .12em; text-transform: uppercase; }
 .lead { color: var(--muted); max-width: 62ch; margin: 10px 0 0; font-size: 16px; }
-.head { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; padding-bottom: 18px; border-bottom: 2px solid var(--line); margin-bottom: 26px; }
+.head { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; padding-bottom: 18px; margin-bottom: 18px; }
 .head .titles { min-width: 0; display: grid; gap: 8px; }
 .search { display: flex; align-items: center; gap: 8px; background: var(--slot-lo); border: 2px solid var(--line); padding: 6px 10px; min-width: min(280px, 100%); }
 .search input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--fg); font: 15px var(--font-body); }
 .search input:focus { outline: none; }
 .search:focus-within { border-color: var(--accent); }
+.tabline { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin: -8px 0 24px; padding-bottom: 14px; border-bottom: 2px solid var(--line); }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs a { display: inline-flex; gap: 8px; align-items: center; font: 16px/1 var(--font-display); letter-spacing: .04em; color: var(--muted); text-decoration: none; padding: 10px 14px; border: 2px solid var(--line); background: var(--panel); }
+.tabs a:hover { color: var(--fg); border-color: var(--slot-hi); }
+.tabs a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tabs .n { font-size: 12px; opacity: .7; }
 .jump { display: flex; flex-wrap: wrap; gap: 6px; margin: -10px 0 24px; }
 .jump a { font: 13px/1 var(--font-display); letter-spacing: .04em; color: var(--muted); text-decoration: none; padding: 6px 8px; border: 2px solid var(--line); background: var(--panel); }
 .jump a:hover { color: var(--fg); border-color: var(--slot-hi); }
@@ -552,25 +558,51 @@ function renderHome() {
 
 const anchor = (section, i) => `${section.id}--${i}`;
 
+/* Tabs of a section: a block's own "tab", otherwise each catalog or card grid is a tab,
+   explanations go to «Как играть» and commands to «Команды». */
+function tabsOf(section) {
+  if (section._tabs) return section._tabs;
+  const tabs = [];
+  const add = (name, i, order) => {
+    let tab = tabs.find((t) => t.name === name);
+    if (!tab) tabs.push(tab = { name, blocks: [], order: order ?? tabs.length });
+    tab.blocks.push(i);
+  };
+  section.blocks.forEach((b, i) => {
+    if (b.tab) add(b.tab, i);
+    else if (b.kind === "catalog" || b.kind === "grid") add(b.title.replace(/\s+—\s+\d+$/, ""), i);
+    else if (b.kind === "commands") add("Команды", i, 1000);
+    else add("Как играть", i, 500);
+  });
+  tabs.sort((x, y) => x.order - y.order);
+  return section._tabs = tabs;
+}
+const tabOfBlock = (section, i) => tabsOf(section).find((t) => t.blocks.includes(i));
+const blockCount = (block) => block.kind === "catalog" ? block.items.length : block.kind === "grid" ? block.items.length : null;
+
 function renderSection(section, focusBlock) {
   currentSection = section.id;
-  const search = el("input", { id: "search", type: "search", placeholder: "Найти в разделе", "aria-label": "Найти в разделе" });
-  const blocks = section.blocks.map((block, i) => {
+  const tabs = tabsOf(section);
+  const tab = (focusBlock != null && tabOfBlock(section, focusBlock)) || tabs[0];
+  const search = el("input", { id: "search", type: "search", placeholder: "Найти во вкладке", "aria-label": "Найти во вкладке" });
+  const blocks = tab.blocks.map((i) => {
+    const block = section.blocks[i];
     const body = renderers[block.kind](block, section);
+    const alone = tab.blocks.length === 1;
     const node = el("section", { class: "block", "data-kind": block.kind, id: anchor(section, i) },
-      el("h2", {}, block.title), body, block.note ? el("p", { class: "note" }, block.note) : null);
+      alone ? null : el("h2", {}, block.title), body, block.note ? el("p", { class: "note" }, block.note) : null);
     node._filter = Array.isArray(body) ? null : body._filter;
     return node;
   });
-  const jumps = section.blocks.length > 4
-    ? el("nav", { class: "jump", "aria-label": "Содержание раздела" }, section.blocks.map((b, i) => el("a", { href: `#${section.id}~${i}` }, b.title)))
-    : null;
-  const empty = el("p", { class: "empty", hidden: true }, "В этом разделе ничего не нашлось.");
+  const bar = el("nav", { class: "tabs", "aria-label": "Вкладки раздела" }, tabs.map((t) => {
+    const n = t.blocks.length === 1 ? blockCount(section.blocks[t.blocks[0]]) : null;
+    return el("a", { href: `#${section.id}~${t.blocks[0]}`, "aria-current": t === tab ? "page" : null }, t.name, n ? el("span", { class: "n" }, String(n)) : null);
+  }));
+  const empty = el("p", { class: "empty", hidden: true }, "Во вкладке ничего не нашлось.");
   view.replaceChildren(
     el("div", { class: "head" },
-      el("div", { class: "titles" }, el("span", { class: "eyebrow" }, section.plugin || "Moggers"), el("h1", {}, section.title), el("p", { class: "lead" }, section.summary)),
-      el("label", { class: "search" }, search)),
-    ...(jumps ? [jumps] : []),
+      el("div", { class: "titles" }, el("h1", {}, section.title), el("p", { class: "lead" }, section.summary))),
+    el("div", { class: "tabline" }, bar, el("label", { class: "search" }, search)),
     el("div", { class: "blocks" }, blocks, empty));
   search.addEventListener("input", () => {
     const query = lower(search.value.trim());
@@ -578,15 +610,14 @@ function renderSection(section, focusBlock) {
     for (const block of blocks) {
       if (block._filter) { const n = block._filter(query); block.hidden = !!query && !n; shown += n; continue; }
       const found = block.querySelectorAll("[data-search]");
-      if (!found.length) { block.hidden = !!query; continue; }
+      if (!found.length) { const hit = !query || lower(block.textContent).includes(query); block.hidden = !hit; shown += hit; continue; }
       let any = 0;
       for (const item of found) { const hit = !query || item.dataset.search.includes(query); item.hidden = !hit; any += hit; }
       block.hidden = !any; shown += any;
     }
-    if (jumps) jumps.hidden = !!query;
     empty.hidden = !query || shown > 0;
   });
-  if (focusBlock != null) document.getElementById(anchor(section, focusBlock))?.scrollIntoView();
+  if (focusBlock != null && focusBlock !== tab.blocks[0]) document.getElementById(anchor(section, focusBlock))?.scrollIntoView();
   else window.scrollTo(0, 0);
 }
 
@@ -615,7 +646,7 @@ function renderItem(section, item) {
   else if (sceneData) show = el("section", {}, el("h2", {}, sceneData.title || "Постройка в 3D"), buildViewer(sceneData));
 
   view.replaceChildren(
-    el("a", { class: "back", href: "#" + section.id }, "← ", section.title),
+    el("a", { class: "back", href: `#${section.id}~${section.blocks.indexOf(catalog)}` }, "← ", section.title, catalog ? " · " + tabOfBlock(section, section.blocks.indexOf(catalog)).name : ""),
     el("div", { class: "hero" }, slot(item.icon, 76),
       el("div", { class: "titles" },
         item.subtitle ? el("span", { class: "eyebrow" }, item.subtitle) : null,

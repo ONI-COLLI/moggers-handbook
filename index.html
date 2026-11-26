@@ -181,7 +181,7 @@ tr:hover td { background: #ffffff06; }
 /* Card page */
 .back { display: inline-flex; gap: 6px; align-items: center; font: 14px/1 var(--font-display); letter-spacing: .04em; color: var(--muted); text-decoration: none; margin-bottom: 16px; }
 .back:hover { color: var(--fg); }
-.hero { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; padding-bottom: 18px; border-bottom: 2px solid var(--line); margin-bottom: 24px; }
+.hero { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: start; padding-bottom: 18px; border-bottom: 2px solid var(--line); margin-bottom: 22px; }
 .hero .slot { width: 76px; height: 76px; }
 .hero .titles { display: grid; gap: 8px; min-width: 0; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -194,6 +194,11 @@ a.tag:hover { color: var(--fg); border-color: var(--slot-hi); }
 .detail { display: grid; gap: 28px; min-width: 0; }
 .detail h2 { font-size: 20px; margin-bottom: 10px; }
 .info { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px 28px; align-items: start; }
+.info.two { grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); }
+.info.two:has(> :only-child) { grid-template-columns: minmax(0, 720px); }
+.lists { display: grid; gap: 18px; }
+.about { display: grid; gap: 4px; max-width: 70ch; }
+.about p { margin: 0; color: var(--fg); }
 .flow { display: grid; gap: 22px; min-width: 0; }
 .flow p { margin: 0; max-width: 70ch; }
 .slots { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; }
@@ -201,7 +206,9 @@ a.tag:hover { color: var(--fg); border-color: var(--slot-hi); }
 .slots a:hover { border-color: var(--line); background: var(--panel); }
 .slots .go { color: var(--accent); font: 14px var(--font-display); }
 .slots .num { color: var(--muted); font: 13px var(--font-display); letter-spacing: .04em; }
-.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; margin: 0; font-size: 14px; }
+.facts { margin: 0; font-size: 14px; border: 2px solid var(--line); background: var(--panel); }
+.facts div { display: grid; grid-template-columns: minmax(130px, 34%) minmax(0, 1fr); gap: 12px; padding: 7px 12px; }
+.facts div + div { border-top: 1px solid var(--line); }
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
 
@@ -246,6 +253,11 @@ a.tag:hover { color: var(--fg); border-color: var(--slot-hi); }
 .timeline .t { font-size: 14px; line-height: 1.3; }
 .timeline .w { font: 12px var(--font-display); color: var(--muted); letter-spacing: .04em; white-space: nowrap; }
 .block > .viewer { max-width: 900px; }
+.plain-steps { list-style: none; counter-reset: ps; margin: 0; padding: 0; display: grid; gap: 8px; max-width: 820px; }
+.plain-steps li { counter-increment: ps; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 10px 12px; background: var(--panel); border: 2px solid var(--line); }
+.plain-steps li::before { content: counter(ps); display: grid; place-items: center; height: 30px; font: 15px/1 var(--font-display); background: var(--panel-2); border: 2px solid var(--line); }
+.plain-steps li > div { display: grid; gap: 6px; align-content: start; padding-top: 4px; }
+.plain-steps p { margin: 0; color: var(--muted); font-size: 14px; }
 .bar3d { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; }
 .process { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
 .process .timeline { max-height: 560px; overflow-y: auto; }
@@ -254,6 +266,7 @@ dialog.modal::backdrop { background: #000b; }
 dialog.modal .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 2px solid var(--line); background: var(--panel); }
 
 @media (max-width: 1000px) {
+  .info.two { grid-template-columns: minmax(0, 1fr); }
   .process { grid-template-columns: minmax(0, 1fr); }
   .process .timeline { max-height: 260px; }
 }
@@ -294,8 +307,8 @@ dialog.modal .mhead { display: flex; justify-content: space-between; align-items
 </div>
 <dialog class="modal" id="modal"></dialog>
 
-<script>window.HANDBOOK_BUILD = "6e962a31d8";</script>
-<script src="viewer.js?v=6e962a31d8"></script>
+<script>window.HANDBOOK_BUILD = "5384f8f0df";</script>
+<script src="viewer.js?v=5384f8f0df"></script>
 <script>
 "use strict";
 const view = document.getElementById("view");
@@ -411,7 +424,16 @@ modal.addEventListener("close", () => modal.replaceChildren());
 modal.addEventListener("click", (e) => { if (e.target === modal) modal.close(); });
 
 /* Cooking: the apparatus in 3D, the block to use is outlined and the items fall into it. */
+/* Steps with no apparatus to show: a plain numbered list, no empty stage. */
+function processList(process) {
+  return el("ol", { class: "plain-steps" }, process.map((s) => el("li", {},
+    el("div", {}, el("b", {}, s.title), s.text ? el("p", {}, s.text) : null,
+      (s.wait || s.setting) ? el("div", { class: "chips" }, s.wait ? el("span", { class: "wait" }, "⏱ ждать " + s.wait) : null, s.setting ? el("span", { class: "set" }, s.setting) : null) : null,
+      s.items?.length ? el("div", { class: "load" }, s.items.map((it) => slotRow(it, true))) : null))));
+}
+
 function processViewer(section, process) {
+  if (!process.some((s) => s.scene && section.scenes?.[s.scene])) return processList(process);
   let viewer = null, step = 0, sceneKey = null, timer = 0;
   const total = process.length;
   const drops = el("div", { class: "drops", "aria-hidden": "true" });
@@ -687,13 +709,17 @@ function renderItem(section, item) {
   const sceneData = sceneKey && section.scenes?.[sceneKey];
 
   const list = (title, slots) => slots?.length ? el("section", {}, el("h2", {}, title), el("ul", { class: "slots" }, slots.map((s) => el("li", {}, slotRow(s))))) : null;
-  const info = [
-    list("Понадобится", d.needs),
-    list("Получится", d.makes),
-    d.facts?.length ? el("section", {}, el("h2", {}, "Подробности"), el("dl", { class: "facts" }, d.facts.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, v)]))) : null,
-    list("Связано", d.related),
-    list("Где используется", used),
-  ].filter(Boolean);
+  const slotLists = [list("Понадобится", d.needs), list("Получится", d.makes), list("Связано", d.related), list("Где используется", used)].filter(Boolean);
+  const facts = d.facts?.length ? el("section", {}, el("h2", {}, "Подробности"),
+    el("dl", { class: "facts" }, d.facts.map(([k, v]) => el("div", {}, el("dt", {}, k), el("dd", {}, v))))) : null;
+  // Facts get the wide column next to the item lists; without facts the lists sit side by side.
+  const info = facts
+    ? el("div", { class: "info two" }, slotLists.length ? el("div", { class: "lists" }, slotLists) : null, facts)
+    : slotLists.length ? el("div", { class: "info" }, slotLists) : null;
+  const statValues = new Set((item.stats || []).map(([, v]) => v));
+  const tagList = Object.entries(item.tags || {}).filter(([, v]) => !statValues.has(v));
+  const tagRow = tagList.length ? el("div", { class: "tags" }, tagList.map(([k, v]) =>
+    el("span", { class: "tag", title: filters[k] || k }, v.length <= 4 && filters[k] ? `${filters[k]}: ${v.toLowerCase()}` : v))) : null;
   let show = null;
   if (d.process?.length) show = el("section", {},
     el("div", { class: "bar3d" }, el("h2", {}, d.processTitle || "По шагам"),
@@ -707,12 +733,10 @@ function renderItem(section, item) {
       el("div", { class: "titles" },
         item.subtitle ? el("span", { class: "eyebrow" }, item.subtitle) : null,
         el("h1", {}, item.title),
-        Object.keys(item.tags || {}).length ? el("div", { class: "tags" }, Object.entries(item.tags).map(([k, v]) => el("span", { class: "tag", title: filters[k] || k }, v))) : null,
-        item.stats?.length ? el("dl", { class: "stats" }, item.stats.map(([k, v]) => el("div", {}, el("dt", {}, k), el("dd", {}, v)))) : null)),
-    el("div", { class: "detail" },
-      d.text?.length ? el("div", { class: "flow" }, d.text.map((p) => el("p", {}, p))) : null,
-      info.length ? el("div", { class: "info" }, info) : null,
-      show));
+        tagRow,
+        item.stats?.length ? el("dl", { class: "stats" }, item.stats.map(([k, v]) => el("div", {}, el("dt", {}, k), el("dd", {}, v)))) : null,
+        d.text?.length ? el("div", { class: "about" }, d.text.map((p) => el("p", {}, p))) : null)),
+    el("div", { class: "detail" }, info, show));
   document.title = `${item.title} — Справочник Moggers`;
   window.scrollTo(0, 0);
 }
@@ -809,7 +833,7 @@ function prepare(data) {
   }
 }
 
-fetch("data.json?v=6e962a31d8", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
+fetch("data.json?v=5384f8f0df", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
   prepare(data);
   nav.replaceChildren(...sections.map((s) => el("li", {}, el("a", { href: "#" + s.id }, slot(s.icon, 26), s.title))));
   buildIndex();

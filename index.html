@@ -277,7 +277,8 @@ dialog.modal .mhead { display: flex; justify-content: space-between; align-items
 </div>
 <dialog class="modal" id="modal"></dialog>
 
-<script src="viewer.js"></script>
+<script>window.HANDBOOK_BUILD = "93e79d028b";</script>
+<script src="viewer.js?v=93e79d028b"></script>
 <script>
 "use strict";
 const view = document.getElementById("view");
@@ -764,7 +765,7 @@ function prepare(data) {
   }
 }
 
-fetch("data.json").then((r) => r.json()).then((data) => {
+fetch("data.json?v=93e79d028b", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
   prepare(data);
   nav.replaceChildren(...sections.map((s) => el("li", {}, el("a", { href: "#" + s.id }, slot(s.icon, 26), s.title))));
   buildIndex();

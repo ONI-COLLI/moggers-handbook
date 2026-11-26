@@ -9,7 +9,7 @@
     if (textures) return Promise.resolve();
     if (!loading) loading = new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = "blocks3d.js";
+      script.src = "blocks3d.js" + (window.HANDBOOK_BUILD ? "?v=" + window.HANDBOOK_BUILD : "");
       script.onload = () => {
         atlas = window.MoggersBlocks;
         textures = atlas.textures.map(([size, encoded]) => {

@@ -282,8 +282,8 @@ dialog.modal .mhead { display: flex; justify-content: space-between; align-items
 </div>
 <dialog class="modal" id="modal"></dialog>
 
-<script>window.HANDBOOK_BUILD = "9f1abdfa9b";</script>
-<script src="viewer.js?v=9f1abdfa9b"></script>
+<script>window.HANDBOOK_BUILD = "258e55bae4";</script>
+<script src="viewer.js?v=258e55bae4"></script>
 <script>
 "use strict";
 const view = document.getElementById("view");
@@ -642,7 +642,7 @@ function renderSection(section, focusBlock) {
   view.replaceChildren(
     el("div", { class: "head" },
       el("div", { class: "titles" }, el("h1", {}, section.title), el("p", { class: "lead" }, section.summary))),
-    el("div", { class: "tabline" }, bar, el("label", { class: "search" }, search)),
+    el("div", { class: "tabline" }, tabs.length > 1 ? bar : el("h2", {}, tab.name), el("label", { class: "search" }, search)),
     el("div", { class: "blocks" }, blocks, empty));
   search.addEventListener("input", () => {
     const query = lower(search.value.trim());
@@ -793,7 +793,7 @@ function prepare(data) {
   }
 }
 
-fetch("data.json?v=9f1abdfa9b", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
+fetch("data.json?v=258e55bae4", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
   prepare(data);
   nav.replaceChildren(...sections.map((s) => el("li", {}, el("a", { href: "#" + s.id }, slot(s.icon, 26), s.title))));
   buildIndex();

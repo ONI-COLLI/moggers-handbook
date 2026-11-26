@@ -115,6 +115,11 @@ tr:hover td { background: #ffffff06; }
 .card { background: var(--panel); border: 2px solid var(--line); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
 .card figure { margin: 0; background: #121212; border-bottom: 2px solid var(--line); aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden; }
 .card .preview { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; border-bottom: 2px solid var(--line); background: radial-gradient(ellipse at 50% 45%, #2a2a2a, #121212 75%); cursor: zoom-in; }
+.card div.preview { cursor: default; }
+.card .stat { color: var(--accent); font-size: 12.5px; }
+.card .cardlink { text-decoration: none; }
+.card .cardlink:hover { text-decoration: underline; }
+.cardbtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .card .preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; image-rendering: pixelated; }
 .card .preview .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font: 13px var(--font-display); }
 .card figure img { width: 92%; height: 92%; object-fit: contain; image-rendering: pixelated; }
@@ -277,8 +282,8 @@ dialog.modal .mhead { display: flex; justify-content: space-between; align-items
 </div>
 <dialog class="modal" id="modal"></dialog>
 
-<script>window.HANDBOOK_BUILD = "93e79d028b";</script>
-<script src="viewer.js?v=93e79d028b"></script>
+<script>window.HANDBOOK_BUILD = "9f1abdfa9b";</script>
+<script src="viewer.js?v=9f1abdfa9b"></script>
 <script>
 "use strict";
 const view = document.getElementById("view");
@@ -468,9 +473,25 @@ function renderCatalog(block, section) {
     const v = item.tags?.[f.key];
     if (v && !values[f.key].includes(v)) values[f.key].push(v);
   }
+  const sceneOf = (item) => {
+    const d = item.detail || {};
+    const key = d.scene || d.process?.find((s) => s.scene)?.scene;
+    return key && section.scenes?.[key];
+  };
+  const pictures = block.view === "scenes";
   const tiles = block.items.map((item) => {
     const stat = (item.stats || []).slice(0, 2).map(([k, v]) => `${k} ${v}`).join(" · ");
-    const tile = el("a", { class: "item", href: `#${section.id}/${item.id}` },
+    const scene = pictures && sceneOf(item);
+    const tile = scene
+      ? el("article", { class: "card" }, still(scene),
+          el("div", { class: "body" },
+            el("div", { class: "top" }, item.icon ? slot(item.icon, 30) : null, el("h3", {}, el("a", { href: `#${section.id}/${item.id}`, class: "cardlink" }, item.title))),
+            item.subtitle ? el("div", { class: "sub" }, item.subtitle) : null,
+            stat ? el("small", { class: "stat" }, stat) : null,
+            el("div", { class: "cardbtns" },
+              el("a", { class: "btn small primary", href: `#${section.id}/${item.id}` }, "Как работать"),
+              el("button", { type: "button", class: "btn small", onclick: () => openScene(scene, item.title) }, "Собрать в 3D"))))
+      : el("a", { class: "item", href: `#${section.id}/${item.id}` },
       slot(item.icon, 44),
       el("span", {}, el("b", {}, item.title),
         item.subtitle ? el("small", {}, item.subtitle) : null,
@@ -504,7 +525,7 @@ function renderCatalog(block, section) {
     });
     return el("div", { class: "filter", role: "group", "aria-label": f.label }, el("span", {}, f.label), chips);
   });
-  const box = el("div", { class: "filters" }, controls, el("div", { class: "items" }, tiles), shown);
+  const box = el("div", { class: "filters" }, controls, el("div", { class: pictures ? "grid" : "items" }, tiles), shown);
   box._filter = (q) => { query = q; return apply(); };
   apply();
   return box;
@@ -513,6 +534,13 @@ function renderCatalog(block, section) {
 /* A whole apparatus as a still 3D picture; a click opens the step-by-step build. */
 function preview(scene, title) {
   const stage = el("button", { type: "button", class: "preview", "aria-label": `${title}: открыть сборку в 3D`, onclick: () => openScene(scene, title) });
+  lazyViewer(stage, (v) => { v.canvas.tabIndex = -1; v.zoom = 1.2; v.setScene(scene); v.setLimit(Infinity, false); });
+  return stage;
+}
+
+/* The same still picture inside a card that has its own buttons. */
+function still(scene) {
+  const stage = el("div", { class: "preview" });
   lazyViewer(stage, (v) => { v.canvas.tabIndex = -1; v.zoom = 1.2; v.setScene(scene); v.setLimit(Infinity, false); });
   return stage;
 }
@@ -765,7 +793,7 @@ function prepare(data) {
   }
 }
 
-fetch("data.json?v=93e79d028b", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
+fetch("data.json?v=9f1abdfa9b", { cache: "no-cache" }).then((r) => r.json()).then((data) => {
   prepare(data);
   nav.replaceChildren(...sections.map((s) => el("li", {}, el("a", { href: "#" + s.id }, slot(s.icon, 26), s.title))));
   buildIndex();

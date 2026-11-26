@@ -1,10 +1,14 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Справочник Moggers</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiny5&family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;500;600&display=swap">
 <style>
-/* Layout: a dark workbench — section rail on the left, one section at a time on the right,
+/* Layout: a dark workbench — section rail on the left, one section or one card at a time on the right,
    item art sits in inventory-style slots; the art carries the colour, the interface stays neutral. */
 :root {
   --bg: #161616;
@@ -14,6 +18,7 @@
   --fg: #ededed;
   --muted: #a3a3a3;
   --accent: #e8b04a;
+  --accent-ink: #1a1408;
   --slot-hi: #555555;
   --slot-lo: #101010;
   --font-display: "Tiny5", "Pixelify Sans", ui-monospace, monospace;
@@ -22,18 +27,20 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
 a { color: inherit; }
-.shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
+button { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+.shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
 .rail {
-  position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: 100vh; overflow-y: auto;
+  position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
   background: var(--panel); border-right: 2px solid var(--line);
-  padding-block: 20px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+  padding-block: max(20px, env(safe-area-inset-top, 0px)) 20px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
 }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-bottom: 22px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-bottom: 18px; }
 .brand b { font: 700 22px/1 var(--font-brand); letter-spacing: .02em; }
 .brand small { display: block; font: 13px/1.2 var(--font-display); color: var(--muted); letter-spacing: .04em; margin-top: 3px; }
-.mark { width: 30px; height: 30px; background: var(--accent); box-shadow: inset -3px -3px 0 #a87420, inset 3px 3px 0 #f6d58c; image-rendering: pixelated; }
+.mark { width: 30px; height: 30px; background: var(--accent); box-shadow: inset -3px -3px 0 #a87420, inset 3px 3px 0 #f6d58c; }
 .nav { display: flex; flex-direction: column; gap: 4px; list-style: none; margin: 0; padding: 0; }
 .nav a {
   display: flex; align-items: center; gap: 10px; padding: 8px 10px; text-decoration: none;
@@ -41,10 +48,23 @@ a { color: inherit; }
 }
 .nav a:hover { background: var(--panel-2); }
 .nav a[aria-current="page"] { background: var(--panel-2); border-color: var(--accent); }
-.nav a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .nav .slot { width: 26px; height: 26px; }
+
+/* Global search */
+.finder { position: relative; margin-bottom: 16px; }
+.finder .search { min-width: 0; width: 100%; }
+.results { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none;
+  background: var(--panel-2); border: 2px solid var(--line); max-height: min(60vh, 460px); overflow-y: auto; box-shadow: 0 12px 30px #0009; }
+.results a { display: flex; gap: 10px; align-items: center; padding: 6px 8px; text-decoration: none; }
+.results a:hover, .results a[aria-selected="true"] { background: #ffffff12; }
+.results .slot { width: 30px; height: 30px; }
+.results b { display: block; font-weight: 500; font-size: 14px; line-height: 1.25; }
+.results small { display: block; color: var(--muted); font-size: 12px; line-height: 1.2; }
+.results .none { padding: 8px; color: var(--muted); font-size: 13px; }
+
 .main { min-width: 0; padding-block: 28px 64px; padding-left: 32px; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.wrap { max-width: 1040px; }
+.wrap { max-width: 1120px; }
 h1, h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing: .03em; text-wrap: balance; margin: 0; }
 h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.05; }
 h2 { font-size: 24px; line-height: 1.15; }
@@ -57,8 +77,11 @@ h3 { font-size: 19px; line-height: 1.2; }
 .search input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--fg); font: 15px var(--font-body); }
 .search input:focus { outline: none; }
 .search:focus-within { border-color: var(--accent); }
-.blocks { display: grid; gap: 34px; }
-.block { display: grid; gap: 12px; min-width: 0; }
+.jump { display: flex; flex-wrap: wrap; gap: 6px; margin: -10px 0 24px; }
+.jump a { font: 13px/1 var(--font-display); letter-spacing: .04em; color: var(--muted); text-decoration: none; padding: 6px 8px; border: 2px solid var(--line); background: var(--panel); }
+.jump a:hover { color: var(--fg); border-color: var(--slot-hi); }
+.blocks { display: grid; gap: 38px; }
+.block { display: grid; gap: 12px; min-width: 0; scroll-margin-top: 16px; }
 .block p { margin: 0; max-width: 70ch; }
 .block .note { color: var(--muted); font-size: 13px; }
 .steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 8px; max-width: 76ch; }
@@ -69,10 +92,11 @@ h3 { font-size: 19px; line-height: 1.2; }
 }
 .steps li span { padding-top: 4px; }
 .slot {
-  width: 36px; height: 36px; flex: none; display: grid; place-items: center; background: #8b8b8b10;
+  width: 36px; height: 36px; flex: none; display: grid; place-items: center; position: relative;
   border: 2px solid; border-color: var(--slot-lo) var(--slot-hi) var(--slot-hi) var(--slot-lo); background-color: #1b1b1b;
 }
 .slot img { width: 80%; height: 80%; image-rendering: pixelated; }
+.slot .qty { position: absolute; right: 1px; bottom: -2px; font: 13px/1 var(--font-display); color: #fff; text-shadow: 2px 2px 0 #3a3a3a; }
 .table-box { overflow-x: auto; border: 2px solid var(--line); background: var(--panel); }
 table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14px; }
 th { text-align: left; font: 14px/1.2 var(--font-display); letter-spacing: .05em; color: var(--muted); background: var(--panel-2); padding: 9px 12px; position: sticky; top: 0; }
@@ -89,6 +113,14 @@ tr:hover td { background: #ffffff06; }
 .card .top { display: flex; gap: 10px; align-items: center; }
 .card .sub { font: 13px/1.2 var(--font-display); color: var(--accent); letter-spacing: .05em; }
 .card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; display: grid; gap: 3px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--panel-2); color: var(--fg); border: 2px solid var(--line);
+  font: 14px/1 var(--font-display); letter-spacing: .04em; padding: 8px 12px; cursor: pointer; text-decoration: none; }
+.btn:hover:not(:disabled) { border-color: var(--slot-hi); background: #333; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: #f6d58c #a87420 #a87420 #f6d58c; }
+.btn.primary:hover:not(:disabled) { background: #f0c063; }
+.btn.small { padding: 5px 8px; font-size: 13px; }
+.card .btn { justify-self: start; margin-top: 4px; }
 .cmds { display: grid; gap: 6px; }
 .cmd { display: grid; grid-template-columns: minmax(150px, max-content) minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 8px 12px; background: var(--panel); border: 2px solid var(--line); }
 .cmd code { font: 14px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--accent); overflow-wrap: anywhere; }
@@ -102,18 +134,122 @@ tr:hover td { background: #ffffff06; }
 .tile .count { font: 13px var(--font-display); color: var(--muted); letter-spacing: .05em; }
 .empty { color: var(--muted); padding: 10px 0; }
 .status { color: var(--muted); }
+
+/* Catalog */
+.filters { display: grid; gap: 8px; }
+.filter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.filter > span { font: 13px/1 var(--font-display); color: var(--muted); letter-spacing: .05em; min-width: 92px; }
+.chip { background: var(--panel); border: 2px solid var(--line); color: var(--muted); font: 13px/1 var(--font-body); padding: 6px 10px; cursor: pointer; }
+.chip:hover { color: var(--fg); border-color: var(--slot-hi); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.filter select { background: var(--panel); color: var(--fg); border: 2px solid var(--line); font: 14px var(--font-body); padding: 5px 8px; }
+.shown { font: 13px/1 var(--font-display); color: var(--muted); letter-spacing: .05em; }
+.items { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 10px; background: var(--panel); border: 2px solid var(--line); text-decoration: none; min-width: 0; transition: border-color .1s, background .1s; }
+.item:hover { border-color: var(--accent); background: #282828; }
+.item .slot { width: 44px; height: 44px; }
+.item b { display: block; font-weight: 500; font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
+.item small { display: block; color: var(--muted); font-size: 12px; line-height: 1.3; margin-top: 2px; }
+.item .stat { color: var(--accent); }
+
+/* Card page */
+.back { display: inline-flex; gap: 6px; align-items: center; font: 14px/1 var(--font-display); letter-spacing: .04em; color: var(--muted); text-decoration: none; margin-bottom: 16px; }
+.back:hover { color: var(--fg); }
+.hero { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; padding-bottom: 18px; border-bottom: 2px solid var(--line); margin-bottom: 24px; }
+.hero .slot { width: 76px; height: 76px; }
+.hero .titles { display: grid; gap: 8px; min-width: 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font: 12.5px/1 var(--font-body); color: var(--muted); border: 2px solid var(--line); padding: 4px 8px; background: var(--panel); text-decoration: none; }
+a.tag:hover { color: var(--fg); border-color: var(--slot-hi); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stats div { background: var(--panel); border: 2px solid var(--line); padding: 6px 12px; display: grid; gap: 2px; }
+.stats dt { font: 12px/1 var(--font-display); color: var(--muted); letter-spacing: .06em; }
+.stats dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.detail { display: grid; gap: 28px; min-width: 0; }
+.detail h2 { font-size: 20px; margin-bottom: 10px; }
+.info { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px 28px; align-items: start; }
+.flow { display: grid; gap: 22px; min-width: 0; }
+.flow p { margin: 0; max-width: 70ch; }
+.slots { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.slots a, .slots span.row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; text-decoration: none; padding: 4px 8px 4px 4px; border: 2px solid transparent; }
+.slots a:hover { border-color: var(--line); background: var(--panel); }
+.slots .go { color: var(--accent); font: 14px var(--font-display); }
+.slots .num { color: var(--muted); font: 13px var(--font-display); letter-spacing: .04em; }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; margin: 0; font-size: 14px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+/* 3D viewer */
+.viewer { background: var(--panel); border: 2px solid var(--line); display: grid; min-width: 0; }
+.stage { position: relative; aspect-ratio: 16 / 10; max-height: 520px; width: 100%; background: radial-gradient(ellipse at 50% 40%, #2a2a2a, #121212 75%); border-bottom: 2px solid var(--line); overflow: hidden; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; image-rendering: pixelated; }
+.stage canvas:active { cursor: grabbing; }
+.stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font: 14px var(--font-display); }
+.orbit { position: absolute; right: 8px; top: 8px; display: flex; gap: 4px; }
+.orbit button { background: #1b1b1bd0; border: 2px solid var(--line); color: var(--fg); font: 14px/1 var(--font-display); padding: 5px 8px; cursor: pointer; }
+.orbit button:hover { border-color: var(--slot-hi); }
+.hint3d { position: absolute; left: 10px; bottom: 8px; font: 12px var(--font-display); color: #ffffff70; letter-spacing: .04em; pointer-events: none; }
+.drops { position: absolute; inset: 0; pointer-events: none; }
+.drops .slot { position: absolute; width: 34px; height: 34px; background: #1b1b1be0; animation: drop 1.6s ease-in infinite; }
+@keyframes drop { 0% { transform: translate(-50%, -150%); opacity: 0; } 15% { opacity: 1; } 70% { transform: translate(-50%, -40%); opacity: 1; } 100% { transform: translate(-50%, 10%); opacity: 0; } }
+.noscene { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 20px; text-align: center; }
+.noscene .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.noscene .slot { width: 56px; height: 56px; }
+.noscene p { margin: 0; color: var(--muted); font: 14px var(--font-display); letter-spacing: .04em; }
+.panel { padding: 14px 16px 16px; display: grid; gap: 10px; }
+.panel .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.panel .count { font: 14px var(--font-display); color: var(--muted); letter-spacing: .05em; }
+.panel h3 { font-size: 20px; }
+.panel p { margin: 0; max-width: 72ch; }
+.panel input[type=range] { width: 100%; accent-color: var(--accent); }
+.panel label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { font: 13px/1 var(--font-display); letter-spacing: .04em; border: 2px solid var(--line); padding: 5px 8px; color: var(--fg); background: var(--panel-2); }
+.chips .wait { border-color: #6f5a2c; }
+.chips .set { border-color: #3d5f6f; }
+.load { display: flex; flex-wrap: wrap; gap: 8px; }
+.load a, .load span.row { display: inline-flex; gap: 8px; align-items: center; padding: 3px 10px 3px 3px; border: 2px solid var(--line); background: var(--panel-2); text-decoration: none; font-size: 14px; }
+.load a:hover { border-color: var(--accent); }
+.load .slot { width: 32px; height: 32px; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; counter-reset: t; }
+.timeline button { width: 100%; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; background: transparent; border: 2px solid transparent; padding: 5px 8px 5px 4px; cursor: pointer; color: var(--muted); }
+.timeline button:hover { background: var(--panel); color: var(--fg); }
+.timeline button[aria-current="step"] { border-color: var(--accent); background: var(--panel); color: var(--fg); }
+.timeline .n { display: grid; place-items: center; height: 26px; font: 14px/1 var(--font-display); background: var(--panel-2); border: 2px solid var(--line); }
+.timeline button[aria-current="step"] .n { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.timeline .t { font-size: 14px; line-height: 1.3; }
+.timeline .w { font: 12px var(--font-display); color: var(--muted); letter-spacing: .04em; white-space: nowrap; }
+.block > .viewer { max-width: 900px; }
+.bar3d { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; }
+.process { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+.process .timeline { max-height: 560px; overflow-y: auto; }
+dialog.modal { width: min(960px, calc(100vw - 24px)); max-height: calc(100vh - 24px); padding: 0; background: var(--bg); color: var(--fg); border: 2px solid var(--line); }
+dialog.modal::backdrop { background: #000b; }
+dialog.modal .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 2px solid var(--line); background: var(--panel); }
+
+@media (max-width: 1000px) {
+  .process { grid-template-columns: minmax(0, 1fr); }
+  .process .timeline { max-height: 260px; }
+}
 @media (max-width: 800px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
-  .rail { position: sticky; top: env(safe-area-inset-top, 0px); height: auto; z-index: 5; border-right: 0; border-bottom: 2px solid var(--line); padding-block: 12px; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+  .rail { position: sticky; top: 0; height: auto; z-index: 20; border-right: 0; border-bottom: 2px solid var(--line); padding-block: max(12px, env(safe-area-inset-top, 0px)) 10px; padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow: visible; }
   .brand { margin-bottom: 10px; }
+  .finder { margin-bottom: 10px; }
   .nav { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
   .nav a { white-space: nowrap; padding: 6px 8px; font-size: 15px; }
   .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-block: 20px 48px; }
   .cmd { grid-template-columns: minmax(0, 1fr) auto; }
   .cmd span { grid-column: 1 / -1; }
+  .hero .slot { width: 60px; height: 60px; }
+  .filter > span { min-width: 0; width: 100%; }
+  .items { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .stage { aspect-ratio: 4 / 3; }
 }
-@media (prefers-reduced-motion: reduce) { .tile { transition: none; } .tile:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .tile, .item { transition: none; } .tile:hover { transform: none; }
+  .drops .slot { animation: none; transform: translate(-50%, -60%); }
+}
 </style>
 
 <div class="shell">
@@ -122,32 +258,46 @@ tr:hover td { background: #ffffff06; }
       <span class="mark" aria-hidden="true"></span>
       <span><b>Moggers</b><small>справочник сервера</small></span>
     </a>
+    <div class="finder">
+      <label class="search"><input id="find" type="search" placeholder="Поиск по всему справочнику" aria-label="Поиск по всему справочнику" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="results"></label>
+      <ul class="results" id="results" role="listbox" hidden></ul>
+    </div>
     <ul class="nav" id="nav"></ul>
   </aside>
   <main class="main"><div class="wrap" id="view"><p class="status">Загружаем справочник…</p></div></main>
 </div>
+<dialog class="modal" id="modal"></dialog>
 
+<script src="viewer.js"></script>
 <script>
+"use strict";
 const view = document.getElementById("view");
 const nav = document.getElementById("nav");
+const modal = document.getElementById("modal");
 let sections = [];
+const items = new Map();   // "section/id" -> {section, item}
+const usedIn = new Map();  // "section/id" -> ["section/id", ...]
 
 const el = (tag, attrs = {}, ...kids) => {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(attrs)) {
-    if (value == null) continue;
-    if (key === "class") node.className = value; else node.setAttribute(key, value);
+    if (value == null || value === false) continue;
+    if (key === "class") node.className = value;
+    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value === true ? "" : value);
   }
-  for (const kid of kids.flat()) if (kid != null) node.append(kid);
+  for (const kid of kids.flat()) if (kid != null && kid !== false) node.append(kid);
   return node;
 };
-const slot = (icon, size) => {
+const slot = (icon, size, count) => {
   const box = el("span", { class: "slot", "aria-hidden": "true" });
   if (size) { box.style.width = box.style.height = size + "px"; }
   if (icon) box.append(el("img", { src: icon, alt: "" }));
+  if (count != null && count !== "" && count !== 1) box.append(el("span", { class: "qty" }, String(count)));
   return box;
 };
 const cellText = (value) => typeof value === "string" ? value : value.text;
+const lower = (s) => (s || "").toLowerCase().replaceAll("ё", "е");
 
 function renderCell(value) {
   if (typeof value === "string") return value;
@@ -155,87 +305,429 @@ function renderCell(value) {
   return value.icon ? el("span", { class: "cellbox" }, slot(value.icon), text) : text;
 }
 
+/* A slot from a catalog detail: icon, name, amount, optional link to another card. */
+function slotRow(s, compact) {
+  const target = s.ref && items.get(s.ref);
+  const icon = s.icon || target?.item.icon;
+  const kids = compact
+    ? [slot(icon, 32, s.count), el("span", {}, s.text)]
+    : [slot(icon, 36, s.count), el("span", {}, s.text, target && target.section.id !== currentSection ? el("span", { class: "cellnote" }, target.section.title) : null),
+       target ? el("span", { class: "go", "aria-hidden": "true" }, "→") : (s.count != null && s.count !== 1 ? el("span", { class: "num" }, "×" + s.count) : el("span"))];
+  return target ? el("a", { href: "#" + s.ref, title: "Открыть карточку" }, kids) : el("span", { class: "row" }, kids);
+}
+let currentSection = null;
+
+/* ---------- 3D ---------- */
+
+function lazyViewer(stage, ready) {
+  const loading = el("div", { class: "loading" }, "Загружаем 3D…");
+  stage.append(loading);
+  const start = () => HandbookViewer.load().then(() => {
+    loading.remove();
+    const canvas = el("canvas", { tabindex: "0", "aria-label": "3D-модель. Перетащите, чтобы повернуть; стрелки поворачивают, плюс и минус меняют масштаб." });
+    stage.prepend(canvas);
+    ready(HandbookViewer.create(canvas));
+  }).catch(() => { loading.textContent = "3D не загрузилось. Обновите страницу."; });
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) { io.disconnect(); start(); }
+  }, { rootMargin: "200px" });
+  io.observe(stage);
+}
+
+function orbit(get) {
+  return el("div", { class: "orbit" },
+    el("button", { type: "button", "aria-label": "Повернуть влево", onclick: () => get()?.turn(-Math.PI / 6) }, "↶"),
+    el("button", { type: "button", "aria-label": "Повернуть вправо", onclick: () => get()?.turn(Math.PI / 6) }, "↷"),
+    el("button", { type: "button", "aria-label": "Приблизить", onclick: () => get()?.scaleBy(1.2) }, "+"),
+    el("button", { type: "button", "aria-label": "Отдалить", onclick: () => get()?.scaleBy(1 / 1.2) }, "−"),
+    el("button", { type: "button", "aria-label": "Исходный вид", onclick: () => get()?.reset() }, "⟲"));
+}
+
+/* Build scheme: the structure appears step by step (layers). */
+function buildViewer(scene) {
+  let viewer = null, step = 0;
+  const total = scene.steps.length;
+  const stage = el("div", { class: "stage" }, orbit(() => viewer), el("span", { class: "hint3d" }, "тяните мышью, чтобы повернуть"));
+  const count = el("span", { class: "count", "aria-live": "polite" });
+  const name = el("h3");
+  const text = el("p");
+  const prev = el("button", { type: "button", class: "btn", onclick: () => go(step - 1) }, "← Назад");
+  const next = el("button", { type: "button", class: "btn primary", onclick: () => go(step + 1) }, "Далее →");
+  const range = el("input", { type: "range", min: 1, max: total, value: 1, "aria-label": "Шаг сборки", oninput: () => go(+range.value - 1) });
+  const only = el("input", { type: "checkbox", onchange: () => go(step) });
+  const whole = el("button", { type: "button", class: "btn small", onclick: () => { only.checked = false; go(total - 1); } }, "Показать целиком");
+  function go(n) {
+    step = Math.max(0, Math.min(total - 1, n));
+    range.value = step + 1;
+    count.textContent = `Шаг ${step + 1} из ${total}`;
+    name.textContent = scene.steps[step][0];
+    text.textContent = scene.steps[step][1] || "";
+    prev.disabled = step === 0; next.disabled = step === total - 1;
+    viewer?.setLimit(step, only.checked);
+  }
+  lazyViewer(stage, (v) => { viewer = v; v.setScene(scene); go(step); });
+  go(0);
+  const panel = el("div", { class: "panel" },
+    el("div", { class: "bar" }, prev, count, next),
+    total > 1 ? range : null, name, text,
+    total > 1 ? el("div", { class: "bar" }, el("label", {}, only, "Только этот шаг"), whole) : null);
+  return el("div", { class: "viewer" }, stage, panel);
+}
+
+function openScene(scene, title) {
+  modal.replaceChildren(
+    el("div", { class: "mhead" }, el("h2", {}, title), el("button", { type: "button", class: "btn small", onclick: () => modal.close() }, "Закрыть")),
+    buildViewer(scene));
+  modal.showModal();
+}
+modal.addEventListener("close", () => modal.replaceChildren());
+modal.addEventListener("click", (e) => { if (e.target === modal) modal.close(); });
+
+/* Cooking: the apparatus in 3D, the block to use is outlined and the items fall into it. */
+function processViewer(section, process) {
+  let viewer = null, step = 0, sceneKey = null, timer = 0;
+  const total = process.length;
+  const drops = el("div", { class: "drops", "aria-hidden": "true" });
+  const blank = el("div", { class: "noscene" });
+  const stage = el("div", { class: "stage" }, drops, blank, orbit(() => viewer));
+  const count = el("span", { class: "count", "aria-live": "polite" });
+  const name = el("h3");
+  const text = el("p");
+  const chips = el("div", { class: "chips" });
+  const load = el("div", { class: "load" });
+  const prev = el("button", { type: "button", class: "btn", onclick: () => { stop(); go(step - 1); } }, "← Назад");
+  const next = el("button", { type: "button", class: "btn primary", onclick: () => { stop(); go(step + 1); } }, "Далее →");
+  const play = el("button", { type: "button", class: "btn", onclick: () => (timer ? stop() : start()) }, "▶ Показать всё");
+  const buttons = process.map((s, i) => el("li", {}, el("button", { type: "button", onclick: () => { stop(); go(i); } },
+    el("span", { class: "n" }, String(i + 1)), el("span", { class: "t" }, s.title), el("span", { class: "w" }, s.wait || ""))));
+  const timeline = el("ol", { class: "timeline" }, buttons);
+  timeline.style.position = "relative";
+
+  function start() { if (step === total - 1) go(0); play.textContent = "❚❚ Пауза"; timer = setInterval(() => { if (step >= total - 1) stop(); else go(step + 1); }, 3800); }
+  function stop() { clearInterval(timer); timer = 0; play.textContent = "▶ Показать всё"; }
+
+  function placeDrops(x, y) { drops.style.setProperty("--x", x + "px"); for (const [i, d] of [...drops.children].entries()) { d.style.left = (x + (i - (drops.children.length - 1) / 2) * 38) + "px"; d.style.top = y + "px"; } }
+
+  function go(n) {
+    step = Math.max(0, Math.min(total - 1, n));
+    const s = process[step];
+    count.textContent = `Шаг ${step + 1} из ${total}`;
+    name.textContent = s.title;
+    text.textContent = s.text || "";
+    text.hidden = !s.text;
+    chips.replaceChildren(...[
+      s.wait ? el("span", { class: "wait", title: "Сколько ждать перед этим шагом" }, "⏱ ждать " + s.wait) : null,
+      s.setting ? el("span", { class: "set" }, s.setting) : null].filter(Boolean));
+    chips.hidden = !chips.children.length;
+    load.replaceChildren(...(s.items || []).map((it) => slotRow(it, true)));
+    load.hidden = !(s.items || []).length;
+    prev.disabled = step === 0; next.disabled = step === total - 1;
+    buttons.forEach((b, i) => (i === step ? b.firstChild.setAttribute("aria-current", "step") : b.firstChild.removeAttribute("aria-current")));
+    const row = buttons[step];
+    if (row.offsetTop < timeline.scrollTop || row.offsetTop + row.offsetHeight > timeline.scrollTop + timeline.clientHeight) timeline.scrollTop = row.offsetTop - timeline.clientHeight / 3;
+    const scene = s.scene && section.scenes?.[s.scene];
+    blank.hidden = !!scene;
+    drops.replaceChildren(...(scene && s.focus ? (s.items || []).slice(0, 4).map((it) => { const d = slot(it.icon || items.get(it.ref)?.item.icon); d.style.animationDelay = (Math.random() * 0.4).toFixed(2) + "s"; return d; }) : []));
+    if (!scene) {
+      blank.replaceChildren(...[
+        (s.items || []).length ? el("div", { class: "row" }, (s.items || []).map((it) => slot(it.icon || items.get(it.ref)?.item.icon, 56, it.count))) : null,
+        el("p", {}, s.setting || s.title)].filter(Boolean));
+    }
+    const canvas = stage.querySelector("canvas");
+    if (canvas) canvas.hidden = !scene;
+    if (viewer && scene) {
+      if (sceneKey !== s.scene) { sceneKey = s.scene; viewer.setScene(scene); viewer.setLimit(Infinity, false); }
+      viewer.setFocus(s.focus || null, s.focus ? placeDrops : null);
+    }
+  }
+  if (process.some((s) => s.scene && section.scenes?.[s.scene])) {
+    lazyViewer(stage, (v) => { viewer = v; go(step); });
+  }
+  go(0);
+  const panel = el("div", { class: "panel" }, el("div", { class: "bar" }, prev, count, next), name, chips, text, load, el("div", { class: "bar" }, play, el("span")));
+  return el("div", { class: "process" }, el("div", { class: "viewer" }, stage, panel), timeline);
+}
+
+/* ---------- catalog ---------- */
+
+function renderCatalog(block, section) {
+  const filters = block.filters || [];
+  const active = Object.fromEntries(filters.map((f) => [f.key, null]));
+  const values = Object.fromEntries(filters.map((f) => [f.key, []]));
+  for (const item of block.items) for (const f of filters) {
+    const v = item.tags?.[f.key];
+    if (v && !values[f.key].includes(v)) values[f.key].push(v);
+  }
+  const tiles = block.items.map((item) => {
+    const stat = (item.stats || []).slice(0, 2).map(([k, v]) => `${k} ${v}`).join(" · ");
+    const tile = el("a", { class: "item", href: `#${section.id}/${item.id}` },
+      slot(item.icon, 44),
+      el("span", {}, el("b", {}, item.title),
+        item.subtitle ? el("small", {}, item.subtitle) : null,
+        stat ? el("small", { class: "stat" }, stat) : null));
+    tile._item = item;
+    tile._hay = lower([item.title, item.subtitle, ...Object.values(item.tags || {}), ...(item.stats || []).flat()].join(" "));
+    return tile;
+  });
+  const shown = el("span", { class: "shown", "aria-live": "polite" });
+  let query = "";
+  function apply() {
+    let n = 0;
+    for (const tile of tiles) {
+      const ok = (!query || tile._hay.includes(query)) && filters.every((f) => !active[f.key] || tile._item.tags?.[f.key] === active[f.key]);
+      tile.hidden = !ok; n += ok;
+    }
+    shown.textContent = n === tiles.length ? `Всего: ${n}` : `Показано ${n} из ${tiles.length}`;
+    return n;
+  }
+  const controls = filters.filter((f) => values[f.key].length > 1).map((f) => {
+    const opts = values[f.key];
+    if (opts.length > 9) {
+      const select = el("select", { "aria-label": f.label, onchange: () => { active[f.key] = select.value || null; apply(); } },
+        el("option", { value: "" }, "Все"), opts.map((o) => el("option", { value: o }, o)));
+      return el("div", { class: "filter" }, el("span", {}, f.label), select);
+    }
+    const chips = [null, ...opts].map((o) => {
+      const chip = el("button", { type: "button", class: "chip", "aria-pressed": o === null ? "true" : "false" }, o ?? "Все");
+      chip.addEventListener("click", () => { active[f.key] = o; for (const c of chips) c.setAttribute("aria-pressed", c === chip ? "true" : "false"); apply(); });
+      return chip;
+    });
+    return el("div", { class: "filter", role: "group", "aria-label": f.label }, el("span", {}, f.label), chips);
+  });
+  const box = el("div", { class: "filters" }, controls, el("div", { class: "items" }, tiles), shown);
+  box._filter = (q) => { query = q; return apply(); };
+  apply();
+  return box;
+}
+
+/* ---------- blocks ---------- */
+
 const renderers = {
   text: (block) => block.paragraphs.map((p) => el("p", {}, p)),
   steps: (block) => el("ol", { class: "steps" }, block.items.map((item) => el("li", {}, el("span", {}, item)))),
   table: (block) => el("div", { class: "table-box" },
     el("table", {},
       el("thead", {}, el("tr", {}, block.columns.map((c) => el("th", { scope: "col" }, c)))),
-      el("tbody", {}, block.rows.map((row) => el("tr", { "data-search": row.map(cellText).join(" ").toLowerCase() },
+      el("tbody", {}, block.rows.map((row) => el("tr", { "data-search": lower(row.map(cellText).join(" ")) },
         row.map((value) => el("td", {}, renderCell(value)))))))),
-  grid: (block) => el("div", { class: "grid" }, block.items.map((item) => el("article", { class: "card", "data-search": [item.title, item.subtitle, ...(item.lines || [])].join(" ").toLowerCase() },
-    item.image ? el("figure", {}, el("img", { src: item.image.startsWith("data:") ? item.image : "assets/" + item.image, alt: item.title, loading: "lazy" })) : el("div"),
-    el("div", { class: "body" },
-      el("div", { class: "top" }, item.icon ? slot(item.icon, 30) : null, el("h3", {}, item.title)),
-      item.subtitle ? el("div", { class: "sub" }, item.subtitle) : null,
-      item.lines && item.lines.length ? el("ul", {}, item.lines.map((line) => el("li", {}, line))) : null)))),
+  grid: (block, section) => el("div", { class: "grid" }, block.items.map((item) => {
+    const scene = item.scene && section.scenes?.[item.scene];
+    return el("article", { class: "card", "data-search": lower([item.title, item.subtitle, ...(item.lines || [])].join(" ")) },
+      item.image ? el("figure", {}, el("img", { src: item.image.startsWith("data:") ? item.image : "assets/" + item.image, alt: item.title, loading: "lazy" })) : el("div"),
+      el("div", { class: "body" },
+        el("div", { class: "top" }, item.icon ? slot(item.icon, 30) : null, el("h3", {}, item.title)),
+        item.subtitle ? el("div", { class: "sub" }, item.subtitle) : null,
+        item.lines && item.lines.length ? el("ul", {}, item.lines.map((line) => el("li", {}, line))) : null,
+        scene ? el("button", { type: "button", class: "btn small", onclick: () => openScene(scene, item.title) }, "Собрать в 3D") : null));
+  })),
   commands: (block) => el("div", { class: "cmds" }, block.items.map((item) => {
+    const code = el("code", {}, item.cmd);
     const copy = el("button", { type: "button" }, "копировать");
     copy.addEventListener("click", () => {
       navigator.clipboard?.writeText(item.cmd).then(() => { copy.textContent = "скопировано"; setTimeout(() => copy.textContent = "копировать", 1400); })
         .catch(() => { const range = document.createRange(); range.selectNodeContents(code); getSelection().removeAllRanges(); getSelection().addRange(range); });
     });
-    const code = el("code", {}, item.cmd);
-    return el("div", { class: "cmd", "data-search": (item.cmd + " " + item.desc).toLowerCase() }, code, el("span", {}, item.desc), copy);
+    return el("div", { class: "cmd", "data-search": lower(item.cmd + " " + item.desc) }, code, el("span", {}, item.desc), copy);
   })),
+  catalog: renderCatalog,
+  scene: (block, section) => [block.text ? el("p", {}, block.text) : null, buildViewer(section.scenes[block.scene])],
 };
 
-function countRows(section) {
-  return section.blocks.reduce((n, b) => n + (b.kind === "table" ? b.rows.length : 0), 0);
+function countItems(section) {
+  return section.blocks.reduce((n, b) => n + (b.kind === "catalog" ? b.items.length : b.kind === "table" ? b.rows.length : 0), 0);
 }
 
 function renderHome() {
+  currentSection = null;
   view.replaceChildren(
     el("div", { class: "head" }, el("div", { class: "titles" },
       el("span", { class: "eyebrow" }, "Moggers · 26.3"),
       el("h1", {}, "Справочник сервера"),
-      el("p", { class: "lead" }, "Всё основное об игровых плагинах сервера: с чего начать, что можно сделать и какие команды пригодятся."))),
+      el("p", { class: "lead" }, "Рецепты, предметы, постройки и правила игровых плагинов сервера. Откройте раздел или найдите нужное через поиск слева."))),
     el("div", { class: "home" }, sections.map((s) => el("a", { class: "tile", href: "#" + s.id },
       el("div", { class: "top" }, slot(s.icon), el("h2", {}, s.title)),
       el("p", {}, s.summary),
-      countRows(s) ? el("span", { class: "count" }, "записей в таблицах: " + countRows(s)) : null))));
+      countItems(s) ? el("span", { class: "count" }, "записей: " + countItems(s)) : null))));
 }
 
-function renderSection(section) {
+const anchor = (section, i) => `${section.id}--${i}`;
+
+function renderSection(section, focusBlock) {
+  currentSection = section.id;
   const search = el("input", { id: "search", type: "search", placeholder: "Найти в разделе", "aria-label": "Найти в разделе" });
-  const blocks = section.blocks.map((block) => {
-    const body = renderers[block.kind](block);
-    return el("section", { class: "block", "data-kind": block.kind },
+  const blocks = section.blocks.map((block, i) => {
+    const body = renderers[block.kind](block, section);
+    const node = el("section", { class: "block", "data-kind": block.kind, id: anchor(section, i) },
       el("h2", {}, block.title), body, block.note ? el("p", { class: "note" }, block.note) : null);
+    node._filter = Array.isArray(body) ? null : body._filter;
+    return node;
   });
-  const empty = el("p", { class: "empty", hidden: "" }, "В этом разделе ничего не нашлось.");
+  const jumps = section.blocks.length > 4
+    ? el("nav", { class: "jump", "aria-label": "Содержание раздела" }, section.blocks.map((b, i) => el("a", { href: `#${section.id}~${i}` }, b.title)))
+    : null;
+  const empty = el("p", { class: "empty", hidden: true }, "В этом разделе ничего не нашлось.");
   view.replaceChildren(
     el("div", { class: "head" },
       el("div", { class: "titles" }, el("span", { class: "eyebrow" }, section.plugin || "Moggers"), el("h1", {}, section.title), el("p", { class: "lead" }, section.summary)),
       el("label", { class: "search" }, search)),
+    ...(jumps ? [jumps] : []),
     el("div", { class: "blocks" }, blocks, empty));
   search.addEventListener("input", () => {
-    const query = search.value.trim().toLowerCase();
+    const query = lower(search.value.trim());
     let shown = 0;
     for (const block of blocks) {
-      const items = block.querySelectorAll("[data-search]");
-      if (!items.length) { block.hidden = !!query; continue; }
+      if (block._filter) { const n = block._filter(query); block.hidden = !!query && !n; shown += n; continue; }
+      const found = block.querySelectorAll("[data-search]");
+      if (!found.length) { block.hidden = !!query; continue; }
       let any = 0;
-      for (const item of items) { const hit = !query || item.dataset.search.includes(query); item.hidden = !hit; any += hit; }
+      for (const item of found) { const hit = !query || item.dataset.search.includes(query); item.hidden = !hit; any += hit; }
       block.hidden = !any; shown += any;
     }
+    if (jumps) jumps.hidden = !!query;
     empty.hidden = !query || shown > 0;
   });
+  if (focusBlock != null) document.getElementById(anchor(section, focusBlock))?.scrollIntoView();
+  else window.scrollTo(0, 0);
 }
 
-function route() {
-  const id = location.hash.slice(1);
-  const section = sections.find((s) => s.id === id);
-  for (const link of nav.querySelectorAll("a")) link.toggleAttribute("aria-current", link.getAttribute("href") === "#" + id);
-  for (const link of nav.querySelectorAll("a[aria-current]")) link.setAttribute("aria-current", "page");
-  section ? renderSection(section) : renderHome();
+function renderItem(section, item) {
+  currentSection = section.id;
+  const d = item.detail || {};
+  const catalog = section.blocks.find((b) => b.kind === "catalog" && b.items.includes(item));
+  const filters = Object.fromEntries((catalog?.filters || []).map((f) => [f.key, f.label]));
+  const used = (usedIn.get(`${section.id}/${item.id}`) || []).map((ref) => ({ text: items.get(ref).item.title, ref }));
+  const sceneKey = d.scene || d.process?.find((s) => s.scene)?.scene;
+  const sceneData = sceneKey && section.scenes?.[sceneKey];
+
+  const list = (title, slots) => slots?.length ? el("section", {}, el("h2", {}, title), el("ul", { class: "slots" }, slots.map((s) => el("li", {}, slotRow(s))))) : null;
+  const info = [
+    list("Понадобится", d.needs),
+    list("Получится", d.makes),
+    d.facts?.length ? el("section", {}, el("h2", {}, "Подробности"), el("dl", { class: "facts" }, d.facts.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, v)]))) : null,
+    list("Связано", d.related),
+    list("Где используется", used),
+  ].filter(Boolean);
+  let show = null;
+  if (d.process?.length) show = el("section", {},
+    el("div", { class: "bar3d" }, el("h2", {}, d.processTitle || "По шагам"),
+      sceneData ? el("button", { type: "button", class: "btn small", onclick: () => openScene(sceneData, sceneData.title || item.subtitle || item.title) }, "Как построить аппарат — 3D") : null),
+    processViewer(section, d.process));
+  else if (sceneData) show = el("section", {}, el("h2", {}, sceneData.title || "Постройка в 3D"), buildViewer(sceneData));
+
+  view.replaceChildren(
+    el("a", { class: "back", href: "#" + section.id }, "← ", section.title),
+    el("div", { class: "hero" }, slot(item.icon, 76),
+      el("div", { class: "titles" },
+        item.subtitle ? el("span", { class: "eyebrow" }, item.subtitle) : null,
+        el("h1", {}, item.title),
+        Object.keys(item.tags || {}).length ? el("div", { class: "tags" }, Object.entries(item.tags).map(([k, v]) => el("span", { class: "tag", title: filters[k] || k }, v))) : null,
+        item.stats?.length ? el("dl", { class: "stats" }, item.stats.map(([k, v]) => el("div", {}, el("dt", {}, k), el("dd", {}, v)))) : null)),
+    el("div", { class: "detail" },
+      d.text?.length ? el("div", { class: "flow" }, d.text.map((p) => el("p", {}, p))) : null,
+      info.length ? el("div", { class: "info" }, info) : null,
+      show));
+  document.title = `${item.title} — Справочник Moggers`;
   window.scrollTo(0, 0);
 }
 
-fetch("data.json").then((r) => r.json()).then((data) => {
+/* ---------- global search ---------- */
+
+const find = document.getElementById("find");
+const results = document.getElementById("results");
+let index = [], picked = -1;
+
+function buildIndex() {
+  index = [];
+  for (const s of sections) {
+    index.push({ title: s.title, sub: "Раздел", icon: s.icon, href: "#" + s.id, hay: lower(s.title + " " + s.summary), rank: 0 });
+    s.blocks.forEach((b, i) => index.push({ title: b.title, sub: s.title, icon: s.icon, href: `#${s.id}~${i}`, hay: lower(b.title), rank: 2 }));
+    for (const b of s.blocks) if (b.kind === "catalog") for (const it of b.items) {
+      index.push({ title: it.title, sub: [s.title, it.subtitle].filter(Boolean).join(" · "), icon: it.icon, href: `#${s.id}/${it.id}`,
+        hay: lower([it.title, it.subtitle, ...Object.values(it.tags || {})].join(" ")), rank: 1 });
+    }
+  }
+}
+function showResults() {
+  const q = lower(find.value.trim());
+  picked = -1;
+  if (!q) { results.hidden = true; find.setAttribute("aria-expanded", "false"); return; }
+  const words = q.split(/\s+/);
+  const hits = index.filter((e) => words.every((w) => e.hay.includes(w)))
+    .sort((a, b) => (lower(b.title).startsWith(q) - lower(a.title).startsWith(q)) || a.rank - b.rank || a.title.localeCompare(b.title, "ru"))
+    .slice(0, 14);
+  results.replaceChildren(...(hits.length ? hits.map((e, i) => el("li", {}, el("a", { href: e.href, role: "option", id: "r" + i, onclick: closeResults },
+    slot(e.icon, 30), el("span", {}, el("b", {}, e.title), el("small", {}, e.sub)))))
+    : [el("li", { class: "none" }, "Ничего не нашлось")]));
+  results.hidden = false; find.setAttribute("aria-expanded", "true");
+}
+function closeResults() { results.hidden = true; find.setAttribute("aria-expanded", "false"); find.value = ""; }
+find.addEventListener("input", showResults);
+find.addEventListener("keydown", (e) => {
+  const links = [...results.querySelectorAll("a")];
+  if (e.key === "Escape") { closeResults(); return; }
+  if (!links.length) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    picked = (picked + (e.key === "ArrowDown" ? 1 : -1) + links.length) % links.length;
+    links.forEach((a, i) => a.setAttribute("aria-selected", i === picked ? "true" : "false"));
+    links[picked].scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    location.hash = links[Math.max(0, picked)].getAttribute("href");
+    closeResults(); find.blur();
+  }
+});
+document.addEventListener("click", (e) => { if (!e.target.closest(".finder")) results.hidden = true; });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "/" && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); find.focus(); }
+});
+
+/* ---------- routing ---------- */
+
+function route() {
+  const hash = decodeURIComponent(location.hash.slice(1));
+  const [path, blockIndex] = hash.split("~");
+  const [id, itemId] = path.split("/");
+  const section = sections.find((s) => s.id === id);
+  for (const link of nav.querySelectorAll("a")) {
+    if (link.getAttribute("href") === "#" + id) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
+  }
+  if (modal.open) modal.close();
+  document.title = section ? `${section.title} — Справочник Moggers` : "Справочник Moggers";
+  const found = section && itemId && items.get(`${id}/${itemId}`);
+  if (found) renderItem(section, found.item);
+  else if (section) renderSection(section, blockIndex != null ? +blockIndex : null);
+  else renderHome();
+}
+
+function prepare(data) {
+  const icons = data.icons || [];
+  const fix = (node) => {
+    if (Array.isArray(node)) { node.forEach(fix); return; }
+    if (!node || typeof node !== "object") return;
+    for (const [k, v] of Object.entries(node)) {
+      if ((k === "icon" || k === "image") && typeof v === "string" && v[0] === "#") node[k] = icons[+v.slice(1)];
+      else fix(v);
+    }
+  };
+  fix(data.sections);
   sections = data.sections;
+  for (const s of sections) if (!s.icon) s.icon = s.blocks.find((b) => b.kind === "catalog" && b.items[0]?.icon)?.items[0].icon || null;
+  for (const s of sections) for (const b of s.blocks) if (b.kind === "catalog") for (const it of b.items) items.set(`${s.id}/${it.id}`, { section: s, item: it });
+  for (const [key, { item }] of items) {
+    const refs = new Set();
+    for (const s of item.detail?.needs || []) if (s.ref) refs.add(s.ref);
+    for (const step of item.detail?.process || []) for (const s of step.items || []) if (s.ref) refs.add(s.ref);
+    for (const ref of refs) { if (ref === key) continue; if (!usedIn.has(ref)) usedIn.set(ref, []); usedIn.get(ref).push(key); }
+  }
+}
+
+fetch("data.json").then((r) => r.json()).then((data) => {
+  prepare(data);
   nav.replaceChildren(...sections.map((s) => el("li", {}, el("a", { href: "#" + s.id }, slot(s.icon, 26), s.title))));
+  buildIndex();
   route();
-}).catch(() => { view.replaceChildren(el("p", { class: "status" }, "Не удалось загрузить данные справочника. Обновите страницу.")); });
+}).catch((error) => { console.error(error); view.replaceChildren(el("p", { class: "status" }, "Не удалось загрузить данные справочника. Обновите страницу.")); });
 addEventListener("hashchange", route);
 </script>
+</html>

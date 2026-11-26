@@ -114,7 +114,10 @@ tr:hover td { background: #ffffff06; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .card { background: var(--panel); border: 2px solid var(--line); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
 .card figure { margin: 0; background: #121212; border-bottom: 2px solid var(--line); aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden; }
-.card figure img { max-width: 92%; max-height: 92%; object-fit: contain; }
+.card .preview { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; border-bottom: 2px solid var(--line); background: radial-gradient(ellipse at 50% 45%, #2a2a2a, #121212 75%); cursor: zoom-in; }
+.card .preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; image-rendering: pixelated; }
+.card .preview .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font: 13px var(--font-display); }
+.card figure img { width: 92%; height: 92%; object-fit: contain; image-rendering: pixelated; }
 .card .body { padding: 12px 14px 14px; display: grid; gap: 6px; align-content: start; }
 .card .top { display: flex; gap: 10px; align-items: center; }
 .card .sub { font: 13px/1.2 var(--font-display); color: var(--accent); letter-spacing: .05em; }
@@ -506,6 +509,13 @@ function renderCatalog(block, section) {
   return box;
 }
 
+/* A whole apparatus as a still 3D picture; a click opens the step-by-step build. */
+function preview(scene, title) {
+  const stage = el("button", { type: "button", class: "preview", "aria-label": `${title}: открыть сборку в 3D`, onclick: () => openScene(scene, title) });
+  lazyViewer(stage, (v) => { v.canvas.tabIndex = -1; v.zoom = 1.2; v.setScene(scene); v.setLimit(Infinity, false); });
+  return stage;
+}
+
 /* ---------- blocks ---------- */
 
 const renderers = {
@@ -519,7 +529,8 @@ const renderers = {
   grid: (block, section) => el("div", { class: "grid" }, block.items.map((item) => {
     const scene = item.scene && section.scenes?.[item.scene];
     return el("article", { class: "card", "data-search": lower([item.title, item.subtitle, ...(item.lines || [])].join(" ")) },
-      item.image ? el("figure", {}, el("img", { src: item.image.startsWith("data:") ? item.image : "assets/" + item.image, alt: item.title, loading: "lazy" })) : el("div"),
+      scene ? preview(scene, item.title)
+        : item.image ? el("figure", {}, el("img", { src: item.image.startsWith("data:") ? item.image : "assets/" + item.image, alt: item.title, loading: "lazy" })) : el("div"),
       el("div", { class: "body" },
         el("div", { class: "top" }, item.icon ? slot(item.icon, 30) : null, el("h3", {}, item.title)),
         item.subtitle ? el("div", { class: "sub" }, item.subtitle) : null,
